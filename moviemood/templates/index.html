@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>MovieMood</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<style type="text/css">
+
+		.main {
+			text-align: center;
+		}
+
+		</style>
+		<!-- Bootstrap -->
+		<link href="/static/static/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+	</head>
+	<body>
+		<div class="container-fluid">
+			<div class="row-fluid">
+  				<div class="main">
+  					<h1>MovieMood</h1>
+					<form class="form-search" name="search_form" action="search_results/" method="post">{% csrf_token %}
+						<div class="input-append">
+						    	<input name="mood" type="text" class="input-large search-query">
+						    	<button type="submit" class="btn">Search</button>
+					  	</div>
+					</form>
+				</div>
+				<div class="span12">
+					{% block content %} {% endblock %}
+				</div>
+			</div>
+		</div>
+		<script src="http://code.jquery.com/jquery.js"></script>
+    	<script src="/static/static/bootstrap/js/bootstrap.min.js"></script>
+	</body>
+</html>
