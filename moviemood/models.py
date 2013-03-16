@@ -3,6 +3,27 @@ from django.db import models
 # Create your models here.
 class Movie(models.Model):
 	id = models.AutoField(primary_key=True)
+	backdrop_path = models.CharField(max_length=100)
+	budget = models.IntegerField()
+	genres = models.CharField(max_length=300)
+	tmdb_id = models.IntegerField()
+	imdb_id = models.CharField(max_length=15)
+	original_title = models.CharField(max_length=200)
+	overview = models.CharField(max_length=1000)
+	popularity = models.CharField(max_length = 50)
+	poster_path = models.CharField(max_length = 150)
+	release_date = models.CharField(max_length = 25)
+	revenue = models.IntegerField()
+	runtime = models.CharField(max_length = 300)
+	tagline = models.CharField(max_length = 1000)
+	vote_average = models.CharField(max_length = 50)
+	vote_count = models.IntegerField()
+	trailers = models.CharField(max_length = 300)
+ 
+	def __unicode__(self):
+		return self.title
+
+	"""
 	imdb_id = models.CharField(max_length=10) # String de la forma /^tt\d+$/
 	runtime = models.CharField(max_length=500)
 	rating = models.CharField(max_length=20)	# Float entre 0.0 y 10.0
@@ -20,6 +41,8 @@ class Movie(models.Model):
 	country = models.CharField(max_length=100)
 	release_date = models.CharField(max_length=8)
 	aka = models.CharField(max_length=150) # Also Known As
+	"""
+
 
 class Mood(models.Model):
 	id = models.AutoField(primary_key=True)

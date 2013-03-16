@@ -1,7 +1,8 @@
 import json
 import ast
+import re
 from random import randint
-from urllib2 import urlopen
+from urllib2 import Request, urlopen
 from django.utils import simplejson 
 from django.http import HttpResponseRedirect, Http404, HttpResponse
 from django.shortcuts import render_to_response, get_object_or_404, render
@@ -68,13 +69,6 @@ def search_results(request):
 		'page' : page,
 		'form': form,
 	}, context_instance=RequestContext(request))
-	"""
-	mood = request.POST.get('search_query','')
-	movies_to_display = search_movies(mood)
-	return render_to_response('results.html', {
-		'movies_to_display' : movies_to_display,
-		}, context_instance=RequestContext(request))
-	"""
 
 def str_to_dict(json):
 	json_string = u''+json
@@ -83,18 +77,6 @@ def str_to_dict(json):
 
 def ini_mood_values():
 	return [["Angry", 0], ["Happy", 0], ["Sad", 0], ["Geeky", 0], ["Weird", 0], ["Relaxed", 0], ["Loved", 0], ["Curious", 0], ["Scared", 0], ["Bored", 0], ["Bleh", 0]]
-	"""
-	angry_act = 0
-	happy_act = 0
-	sad_act = 0
-	geeky_act = 0
-	weird_act = 0
-	relaxed_act = 0
-	loved_act = 0
-	curious_act = 0
-	bored_act = 0
-	bleh_act = 0
-	"""
 
 def get_total_weight(mood, genres):
 	weight = 0
@@ -183,95 +165,114 @@ def search_movies(mood):
 	url = ""
 	while actual_movies < M:
 		act_moods = []
-		bored_movie = []
 		id = ""
 
 		# Valores default de la pelicula 
-		def_runtime = "na"
-		def_rating = "na"
-		def_genres = "na"
-		def_rated = "na"
-		def_language = "na"
-		def_title = "na"
-		def_poster = "na"
-		def_imdb_url = "na"
-		def_directors = "na"
-		def_rating_count = -1
-		def_actors = "na"
-		def_plot = "na"
-		def_year = -1
-		def_country = "na"
-		def_release_date = "na"
-		def_aka = "na"
+		def_adult = "N/A"
+		def_backdrop_path = "N/A"
+		def_budget = -1
+		def_genres = "N/A"
+		def_imdb_id = "N/A"
+		def_original_title = "N/A"
+		def_overview = "N/A"
+		def_popularity = "N/A"
+		def_poster_path = "N/A"
+		def_release_date = "N/A"
+		def_revenue = -1
+		def_runtime = "N/A"
+		def_tagline = "N/A"
+		def_vote_average = "N/A"
+		def_vote_count = -1
+		def_trailers = "N/A"
 
-		id += str(randint(0,2)) + str(randint(0,8))
-		for i in xrange(5):
-			id += str(randint(0,9))
-		url = "http://imdbapi.org/?id=tt" + id
-		json_string = urlopen(url).read()
-		movie_data = u'' + json_string
-		movie_data = ast.literal_eval(movie_data)
-		if 'code' not in movie_data and 'rating' in movie_data and 'genres' in movie_data:
-			if float(movie_data['rating']) >= 6.5: # Revisa que sea mayor a 6.5 estrellas
-				if float(movie_data['rating']) >= 8.5: # Si tiene mas de 8.5 estrellas le agregamos el mood bored
-					bored_movie.append("bored")
-					act_moods.append(bored_movie)
+		headers = {"Accept": "application/json"}
+		url = None
+
+		while(url is None):
+			id = str(randint(0,88099))
+			url = "http://api.themoviedb.org/3/movie/" + id + "?api_key=2dc20cff6915def3a6fc5df0dbf7126c&append_to_response=trailers"
+			request = Request(url, headers=headers) 
+			try: 
+			    json_string = urlopen(request).read()
+			    continue
+			except Exception:
+				url = None
+			    #import traceback
+			    #checksLogger.error('generic exception: ' + traceback.format_exc())
+			"""
+			except urllib2.HTTPError, e:
+			    checksLogger.error('HTTPError = ' + str(e.code))
+			except urllib2.URLError, e:
+			    checksLogger.error('URLError = ' + str(e.reason))
+			except urllib2.HTTPException, e:
+			    checksLogger.error('HTTPException')
+			""" 
+
+		"""
+		json_obj = json.loads(json_string)
+		for key, value in json_obj.items():
+			json_obj[key] = str(value)
+		json_obj['adult'] = "" + str(json_obj['adult'])
+		if json_obj['adult'] == "False":
+			json_obj['adult'] = "False"
+		json_obj['belongs_to_collection'] = ""
+		json_obj = json.dumps(json_string)
+		"""
+		movie_data = json_string.decode('utf-8')
+		movie_data = json.loads(movie_data)
+		if 'status_code' not in movie_data and not movie_data['adult'] and 'vote_average' in movie_data and 'genres' in movie_data:
+			if float(movie_data['vote_average']) >= 6.5: # Revisa que sea mayor a 6.5 estrellas
+				if float(movie_data['vote_average']) >= 8.5: # Si tiene mas de 8.5 estrellas le agregamos el mood bored
+					act_moods.append("bored")
 				try:
-					act_movie_in_db = Movie.objects.get(imdb_id=movie_data['imdb_id'])
+					act_movie_in_db = Movie.objects.get(tmdb_id=movie_data['id'])
 				except Movie.DoesNotExist:
 					act_movie_in_db = None	
 				# all_movies = Movie.objects.all() # Siempre hay que volver a recuperar todas las peliculas para el caso de que se agregue varias veces la misma pelicula en la misma busqueda
 				if act_movie_in_db == None:
-					genres = movie_data['genres']
-					#genres = u'' + movie_data['genres']
-					# genres = ast.literal_eval(genres)
+					genres = [genre['name'] for genre in movie_data['genres']]
 					act_moods = mood_it(genres)
 
 					# Revisar que existan todos los valores considerados y si no existe darle un valor default
-					if 'runtime' not in movie_data:
+					if 'backdrop_path' not in movie_data or movie_data['backdrop_path'] == None:
+						movie_data['backdrop_path'] = def_backdrop_path
+					if 'budget' not in movie_data or movie_data['budget'] == None:
+						movie_data['budget'] = def_budget
+					if 'imdb_id' not in movie_data or movie_data['imdb_id'] == None:						
+						movie_data['imdb_id'] = def_imdb_id
+					if 'original_title' not in movie_data or movie_data['original_title'] == None:
+						movie_data['original_title'] = def_original_title
+					if 'overview' not in movie_data or movie_data['overview'] == None:
+						movie_data['overview'] = def_overview
+					if 'popularity' not in movie_data or movie_data['popularity'] == None:
+						movie_data['popularity'] = def_popularity
+					if 'poster_path' not in movie_data or movie_data['poster_path'] == None:
+						movie_data['poster_path'] = def_poster_path
+					if 'release_date' not in movie_data or movie_data['release_date'] == None:
+						movie_data['release_date'] = def_release_date
+					if 'revenue' not in movie_data or movie_data['revenue'] == None:						
+						movie_data['revenue'] = def_revenue
+					if 'runtime' not in movie_data or movie_data['runtime'] == None:
 						movie_data['runtime'] = def_runtime
-					if 'rating' not in movie_data:
-						movie_data['rating'] = def_rating
-					if 'genres' not in movie_data:
-						movie_data['genres'] = def_genres
-					if 'rated' not in movie_data:						
-						movie_data['rated'] = def_rated
-					if 'language' not in movie_data:
-						movie_data['language'] = def_language
-					if 'title' not in movie_data:
-						movie_data['title'] = def_title
-					if 'poster' not in movie_data:
-						movie_data['poster'] = def_poster
-					if 'imdb_url' not in movie_data:
-						movie_data['imdb_url'] = def_imdb_url
-					if 'directors' not in movie_data:
-						movie_data['directors'] = def_directors
-					if 'rating_count' not in movie_data:						
-						movie_data['rating_count'] = def_rating_count
-					if 'actors' not in movie_data:
-						movie_data['actors'] = def_actors
-					if 'plot_simple' not in movie_data:
-						movie_data['plot_simple'] = def_plot	
-					if 'year' not in movie_data:
-						movie_data['year'] = def_year	
-					if 'country' not in movie_data:
-						movie_data['country'] = def_country
-					if 'release_date' not in movie_data:
-						movie_data['release_date'] = def_release_date	
-					if 'also_known_as' not in movie_data:
-						movie_data['also_known_as'] = def_aka																							
-
+					if 'tagline' not in movie_data or movie_data['tagline'] == None:
+						movie_data['tagline'] = def_tagline	
+					if 'vote_average' not in movie_data or movie_data['vote_average'] == None:
+						movie_data['vote_average'] = def_vote_average
+					if 'vote_count' not in movie_data or movie_data['vote_count'] == None:
+						movie_data['vote_count'] = def_vote_count
+					if 'trailers' not in movie_data or movie_data['trailers'] == None:
+						movie_data['trailers'] = def_trailers
 
 					# Agregamos pelicula a bd
-					new_movie = Movie(imdb_id=movie_data['imdb_id'], runtime=movie_data['runtime'], rating=movie_data['rating'],
-						genres=movie_data['genres'], rated=movie_data['rated'], language=movie_data['language'], title=movie_data['title'],
-						poster=movie_data['poster'], imdb_url=movie_data['imdb_url'], directors=movie_data['directors'],
-						rating_count=movie_data['rating_count'], actors=movie_data['actors'], plot=movie_data['plot_simple'], year=movie_data['year'],
-						country=movie_data['country'], release_date=movie_data['release_date'], aka=movie_data['also_known_as'])
+					new_movie = Movie(tmdb_id=movie_data['id'], backdrop_path=movie_data['backdrop_path'], budget=movie_data['budget'],
+						genres=genres, imdb_id=movie_data['imdb_id'], original_title=movie_data['original_title'], overview=movie_data['overview'],
+						popularity=movie_data['popularity'], poster_path=movie_data['poster_path'], release_date=movie_data['release_date'],
+						revenue=movie_data['revenue'], runtime=movie_data['runtime'], tagline=movie_data['tagline'], vote_average=movie_data['vote_average'],
+						vote_count=movie_data['vote_count'], trailers=movie_data['trailers'])
 					new_movie.save()
 
 					# Agregamos los moods de la pelicula CLASIFICACION EN BD
-					imdb_id_act = Movie.objects.get(imdb_id=movie_data['imdb_id'])
+					imdb_id_act = Movie.objects.get(tmdb_id=movie_data['id'])
 					for act_mood in act_moods:
 						mood_act = Mood.objects.get(mood=act_mood[0])
 						movie_mood = Movie_Mood()
