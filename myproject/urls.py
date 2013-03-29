@@ -7,7 +7,7 @@ admin.autodiscover()
 urlpatterns = patterns('',
 	(r'^$', 'moviemood.views.index'),
 
-	(r'^search_results/', 'moviemood.views.search_results'),
+	(r'^search_results/$', 'moviemood.views.search_results'),
     # Examples:
     # url(r'^$', 'myproject.views.home', name='home'),
     # url(r'^myproject/', include('myproject.foo.urls')),

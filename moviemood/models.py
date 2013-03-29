@@ -18,10 +18,10 @@ class Movie(models.Model):
 	tagline = models.CharField(max_length = 1000)
 	vote_average = models.CharField(max_length = 50)
 	vote_count = models.IntegerField()
-	trailers = models.CharField(max_length = 300)
+	trailers = models.CharField(max_length = 800)
  
 	def __unicode__(self):
-		return self.title
+		return self.original_title
 
 	"""
 	imdb_id = models.CharField(max_length=10) # String de la forma /^tt\d+$/

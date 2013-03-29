@@ -1,19 +1,36 @@
 {% extends "index.html" %}
 
 {% block content %}
-		<ul class="thumbnails">
-			{% for movie in movies_to_display %}
-					<li class="span4">
-						<div class="thumbnail">
-							{% if movie.poster == "na" %}
-								<img src="http://appstorehq-production.s3.amazonaws.com/rickroll-rickrollyourfriends--iphone-35823.320x480.1255327202.39602.jpg" alt="">
-							{% else %}
-								<img src="{{ movie.poster }}" alt="">
-							{% endif %}
-							<h2>{{ movie.title }}</h2>
-							<p>{{ movie.plot }}</p>
+	<hr>
+	{% for movie in movies_to_display %}
+		<!-- <div class="hero-unit"> -->
+			<div class="row-fluid">
+				<div class="span3 center">
+					{% if movie.poster_path == "N/A" %}
+						<img src="http://appstorehq-production.s3.amazonaws.com/rickroll-rickrollyourfriends--iphone-35823.320x480.1255327202.39602.jpg" alt="">
+					{% else %}
+						<img src="http://cf2.imgobject.com/t/p/w185/{{ movie.poster_path }}" alt="">
+					{% endif %}
+				</div>
+				<div class="span5">
+					<p class="lead">
+						{{ movie.original_title }}
+						{% if movie.release_date != "N/A" %}
+							({{ movie.release_date }})
+						{% endif %}
+					</p> 	
+					<p>{{ movie.overview }}</p>
+					<p><img src="/static/static/imgs/star.png"> {{ movie.vote_average }}</p>
+				</div>
+				<div class="span4">
+					{% if movie.trailers %}
+						<div class="flex-video widescreen">
+							<iframe src="http://www.youtube.com/embed/{{movie.trailers.0}}?feature=player_detailpage" frameborder="0" allowfullscreen=""></iframe>
 						</div>
-					</li>
-			{% endfor %}
-		</ul>
+					{% endif %}
+				</div>
+			</div>
+			<hr>
+		<!-- </div> -->
+	{% endfor %}
 {% endblock %}
