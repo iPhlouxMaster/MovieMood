@@ -1,13 +1,18 @@
 from django.conf.urls import patterns, include, url
+from moviemood import views
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = patterns('',
-	(r'^$', 'moviemood.views.index'),
+	url(r'^$', views.index, name='index'),
 
-	(r'^search_results/$', 'moviemood.views.search_results'),
+	url(r'^search_results/$', views.search_results, name='results'),
+	#ex: /movies/10
+	url(r'^movies/(?P<movie_id>\d+)/$', views.movie_detail, name='detail'),
+
+    url(r'^classify/$', views.classify, name='classify'), #Classify (Use for maintenance purposes)
     # Examples:
     # url(r'^$', 'myproject.views.home', name='home'),
     # url(r'^myproject/', include('myproject.foo.urls')),

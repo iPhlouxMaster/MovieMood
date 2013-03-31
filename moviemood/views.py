@@ -1,5 +1,4 @@
 import json
-import ast
 import re
 from random import randint
 from urllib2 import Request, urlopen
@@ -10,11 +9,11 @@ from django.template import RequestContext, Context
 
 from moviemood.models import Movie, Mood, Movie_Mood
 from moviemood.forms import SearchForm
-from moviemood.search import mood_it
+from moviemood.search import mood_it, search_movies_db
 from moviemood.funcs import *
 
-M = 2 # Numero de peliculas a desplegar
-N = 1 # Numero de peliculas a buscar en la base de datos
+M = 4 # Numero de peliculas a desplegar
+N = 0 # Numero de peliculas a buscar en la base de datos
 
 def index(request):
 	page = "index"
@@ -25,29 +24,59 @@ def index(request):
 
 def search_results(request):
 	page = "results"
+	movies_to_display = []
+	response = render_to_response('results.html', {
+			'movies_to_display' : movies_to_display,
+			}, context_instance=RequestContext(request))
 	if request.method == 'POST': # If the form has been submitted...
 		form = SearchForm(request.POST) # A form bound to the POST data
 		if form.is_valid(): 
 			mood = form.cleaned_data['mood']
+			movies_from_db = search_movies_db(mood, N)
 			movies_to_display = search_movies(mood)
+			movies_to_display.extend(movies_from_db)
 			movies_to_display = parse_items(movies_to_display)
-			#trailers_dict = ast.literal_eval(movies_to_display['trailers'])
-			#if trailers_dict['youtube'] != []:
-			#	trailer = trailers_dict['youtube'][0]['source']
-			#else:
-			#	trailer = "N/A"
-			return render_to_response('results.html', {
-			'movies_to_display' : movies_to_display,
-			#'trailer': trailer,
+			#set_cookie(response, 'name', mood)
+			response = render_to_response('results.html', {
+				'movies_to_display' : movies_to_display,
+				'mood' : mood,
 			}, context_instance=RequestContext(request))
+			return response
 			# return HttpResponseRedirect('search_results/') # Redirect after POST
 	else:
 		form = SearchForm() # An unbound form
+
+	mood = request.POST['mood']
+	movies_from_db = search_movies_db(mood, N)
+	movies_to_display = search_movies(mood)
+	movies_to_display.extend(movies_from_db)
+	movies_to_display = parse_items(movies_to_display)
+	response = render_to_response('prueba.html', {
+		'movies_to_display' : movies_to_display,
+		'mood' : mood,
+	}, context_instance=RequestContext(request))
+	return response
 
 	return render(request, 'results.html', {
 		'page' : page,
 		'form': form,
 	}, context_instance=RequestContext(request))
+
+
+def movie_detail(request, movie_id):
+    try:
+        movie = Movie.objects.get(id=movie_id)
+        movie = parse_item(movie)
+    except Movie.DoesNotExist:
+        raise Http404
+    return render(request, 'detail.html', {'movie': movie})
+
+def classify(request):
+	count = classify_bored()
+	return render_to_response('classify.html', {
+		'count': count,
+	}, context_instance=RequestContext(request))
+
 
 def search_movies(mood):
 	movies_to_display = []
@@ -83,10 +112,10 @@ def search_movies(mood):
 
 		movie_data = json_string.decode('utf-8')
 		movie_data = json.loads(movie_data)
-		if not movie_data['adult'] and 'vote_average' in movie_data and 'genres' in movie_data:
+		if not movie_data['adult'] and 'vote_average' in movie_data and 'genres' in movie_data and movie_data['genres'] != []:
 			if float(movie_data['vote_average']) >= 6.5: # Revisa que sea mayor a 6.5 estrellas
 				if float(movie_data['vote_average']) >= 8.5: # Si tiene mas de 8.5 estrellas le agregamos el mood bored
-					act_moods.append("bored")
+					act_moods.append(["Bored", 0])
 				try:
 					act_movie_in_db = Movie.objects.get(tmdb_id=movie_data['id'])
 				except Movie.DoesNotExist:
@@ -94,7 +123,7 @@ def search_movies(mood):
 				# all_movies = Movie.objects.all() # Siempre hay que volver a recuperar todas las peliculas para el caso de que se agregue varias veces la misma pelicula en la misma busqueda
 				if act_movie_in_db == None:
 					genres = [genre['name'] for genre in movie_data['genres']]
-					act_moods = mood_it(genres)
+					act_moods.extend(mood_it(genres))
 
 					# Revisar que existan todos los valores considerados y si no existe darle un valor default
 					exists_value('backdrop_path', movie_data)

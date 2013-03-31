@@ -1,0 +1,47 @@
+{% extends "index.html" %}
+
+{% block content %}
+<div class="hero-unit">
+	<div class="row-fluid">
+		<div class="span3 center">
+			{% if movie.poster_path == "N/A" %}
+				<img src="http://appstorehq-production.s3.amazonaws.com/rickroll-rickrollyourfriends--iphone-35823.320x480.1255327202.39602.jpg" alt="">
+			{% else %}
+				<img src="http://cf2.imgobject.com/t/p/w342/{{ movie.poster_path }}" alt="">
+			{% endif %}
+		</div>
+		<div class="span9">
+			<p class="lead">
+				{{ movie.original_title }}
+				{% if movie.release_date != "N/A" %}
+					({{ movie.release_date }})
+				{% endif %}
+			</p> 	
+			<p>{{ movie.runtime }} mins.</p>
+			<p>{{ movie.overview }}</p>
+			<p>
+				<img src="/static/static/imgs/star.png"> {{ movie.vote_average }} 
+				{% if movie.tmdb_id != "N/A" %}
+					<a class="btn btn-success btn-mini pull-right" href="http://www.themoviedb.org/movie/{{ movie.tmdb_id }}">TMDB </a>
+				{% endif %}
+				<span class="divider pull-right">  </span>
+				{% if movie.imdb_id != "N/A" %}
+					<a class="btn btn-warning btn-mini pull-right" href="http://www.imdb.com/title/{{ movie.imdb_id }}"> IMDB </a>
+				{% endif %}
+			</p>
+			{% if movie.trailers %}
+				<div class="flex-video widescreen">
+					<iframe src="http://www.youtube.com/embed/{{movie.trailers.0}}?feature=player_detailpage" frameborder="0" allowfullscreen=""></iframe>
+				</div>
+			{% endif %}
+		</div>
+	</div>
+	<div class="row-fluid">
+		<div class="span12 center">
+			{% if movie.tagline and movie.tagline != "N/A" %}
+				<em>"{{ movie.tagline }}"</em>
+			{% endif %}
+		</div>
+	</div>
+</div>
+{% endblock %}

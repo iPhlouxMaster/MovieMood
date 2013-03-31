@@ -1,3 +1,9 @@
+# coding=utf-8
+
+from random import randint
+
+from moviemood.models import *
+
 # Moods with genres and weights
 moods = [["Angry", 0], ["Happy", 0], ["Sad", 0], ["Geeky", 0], ["Weird", 0], ["Relaxed", 0], ["Loved", 0], ["Curious", 0], ["Scared", 0], ["Bored", 0], ["Bleh", 0]]
 
@@ -93,3 +99,26 @@ def mood_it(genres):
 		moods.remove(max_act)
 
 	return highest_weights
+
+# search n movies of mood in db
+def search_movies_db(mood, n_movies):
+	movies_to_display = []
+	mood = mood[0].upper() + mood[1:].lower() # Asegura que el mood tenga el formato de letra mayúscula al principio y todo lo demás minuscula como en la db (ex. 'Happy')
+	try:
+		mood_id = Mood.objects.get(mood=mood)
+		mood_id = mood_id.id
+		movie_mood = Movie_Mood.objects.filter(mood_id_id=mood_id)
+		tot_movies = movie_mood.count()
+		for val in xrange(n_movies):
+			rand = randint(0, tot_movies)
+			movie_id = movie_mood[rand].movie_id_id
+			try:
+				movie = Movie.objects.get(id=movie_id)
+				movies_to_display.append(movie)
+			except Movie.DoesNotExist:
+				raise Http404
+	# !!! FALTA ELIMINAR DEL QUERYSET EL OBJETO QUE YA SE USO !!!
+	except Movie.DoesNotExist:
+		raise Http404
+
+	return movies_to_display
